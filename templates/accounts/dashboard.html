@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard</title>
+</head>
+<body>
+
+<h2>User Dashboard</h2>
+<button onclick="logout()">Logout</button>
+
+<hr>
+
+<h3>Create Task</h3>
+<input type="text" id="taskTitle" placeholder="Task title">
+<button onclick="createTask()">Add Task</button>
+
+<p id="msg"></p>
+
+<hr>
+
+<h3>Your Tasks</h3>
+<ul id="taskList"></ul>
+
+<script>
+const token = sessionStorage.getItem("access_token");
+
+// 🔐 Protect dashboard
+if (!token) {
+    window.location.href = "/api/v1/auth/login-page/";
+}
+
+// Load tasks
+async function loadTasks() {
+    const response = await fetch("/api/v1/tasks/", {
+        headers: {
+            "Authorization": "Bearer " + token
+        }
+    });
+
+    const tasks = await response.json();
+    const list = document.getElementById("taskList");
+    list.innerHTML = "";
+
+    tasks.forEach(task => {
+        const li = document.createElement("li");
+        li.innerText = task.title + " (" + task.status + ")";
+        list.appendChild(li);
+    });
+}
+
+// Create task
+async function createTask() {
+    const title = document.getElementById("taskTitle").value;
+
+    const response = await fetch("/api/v1/tasks/", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + token
+        },
+        body: JSON.stringify({
+            title: title,
+            description: "",
+            status: "PENDING"
+        })
+    });
+
+    if (response.ok) {
+        document.getElementById("msg").innerText = "Task added";
+        document.getElementById("taskTitle").value = "";
+        loadTasks();
+    } else {
+        document.getElementById("msg").innerText = "Error adding task";
+    }
+}
+
+// Logout
+function logout() {
+    sessionStorage.clear();
+    window.location.href = "/api/v1/auth/login-page/";
+}
+
+loadTasks();
+</script>
+
+</body>
+</html>
